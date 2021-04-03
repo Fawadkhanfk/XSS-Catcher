@@ -3,7 +3,7 @@ from app.api import bp
 from app.decorators import permissions
 from app.models import XSS, Client, User
 from app.utils import generate_data_response, generate_message_response
-from app.validators import check_length, is_email, is_url, not_empty
+from app.validators import check_length, is_email, is_url
 from flask import jsonify, request
 from flask_jwt_extended import get_current_user, jwt_required
 
