@@ -1,9 +1,11 @@
 import smtplib
 import ssl
 from email.mime.text import MIMEText
+from typing import Any
 
 import requests
 from app.models import Settings
+from flask import jsonify
 
 
 class Error(Exception):
@@ -86,3 +88,11 @@ def send_webhook(xss=None, receiver=None):
         requests.post(
             url=receiver, json={"text": "This is a test webhook from XSS catcher. If you are getting this, it's because your webhook configuration works."}
         )
+
+
+def generate_data_response(message: Any, status_code: int = 200) -> tuple:
+    return jsonify(message), status_code
+
+
+def generate_message_response(message: str, status_code: int = 200) -> tuple:
+    return jsonify({"message": message}), status_code

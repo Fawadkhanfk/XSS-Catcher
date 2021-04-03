@@ -8,7 +8,8 @@ from .functions import *
 
 def test_login(client):
     rv = login(client, {}, username="admin", password="xss")
-    assert b"OK" in rv.data
+    assert "access_token" in rv.json.keys()
+    assert "refresh_token" in rv.json.keys()
     access_header, refresh_header = login_get_headers(client, "admin", "xss")
     rv = login(client, access_header, username="admin", password="xss")
     assert b"Already logged in" in rv.data

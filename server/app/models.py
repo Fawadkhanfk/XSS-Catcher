@@ -12,7 +12,7 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     uid = db.Column(db.String(6), unique=True, nullable=False)
     name = db.Column(db.String(32), unique=True, nullable=False)
-    description = db.Column(db.String(128))
+    description = db.Column(db.String(128), nullable=True)
     mail_to = db.Column(db.String(256), nullable=True)
     webhook_url = db.Column(db.Text, nullable=True)
     xss = db.relationship("XSS", backref="client", lazy="dynamic")

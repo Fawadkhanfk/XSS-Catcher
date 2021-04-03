@@ -38,7 +38,7 @@ def refresh(client, headers):
 
 
 def login_get_headers(client, username, password):
-    tokens = json.loads(login(client, {}, username=username, password=password).data)["detail"]
+    tokens = json.loads(login(client, {}, username=username, password=password).data)
     access_header = {"Authorization": f"Bearer {tokens['access_token']}"}
     refresh_header = {"Authorization": f"Bearer {tokens['refresh_token']}"}
     return access_header, refresh_header

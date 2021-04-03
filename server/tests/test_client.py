@@ -10,15 +10,13 @@ from .functions import *
 
 def test_new_client(client):
     access_header, _ = login_get_headers(client, "admin", "xss")
-    rv = create_client(client, access_header, name="test1")
-    assert b"Missing name or description" in rv.data
+    rv = create_client(client, access_header)
+    assert rv.status_code == 400
     create_client(client, access_header, name="name1", description="desc1")
     client1 = Client.query.filter_by(id=1).first()
     assert client1.name == "name1"
     rv = create_client(client, access_header, name="name1", description="desc1")
     assert b"Client already exists" in rv.data
-    rv = create_client(client, access_header, name="", description="desc1")
-    assert b"Invalid data (name empty or too long or description too long)" in rv.data
 
 
 def test_get_client(client):
