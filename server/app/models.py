@@ -18,7 +18,7 @@ class Client(db.Model):
     xss = db.relationship("XSS", backref="client", lazy="dynamic")
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
-    def to_dict_clients(self):
+    def get_dashboard_stats(self):
         """Returns a dict containing client's data to be displayed in a list of clients"""
         data_num = 0
         xss = XSS.query.filter_by(client_id=self.id).all()
@@ -34,7 +34,7 @@ class Client(db.Model):
         }
         return data
 
-    def to_dict_client(self):
+    def get_dict_representation(self):
         """Returns a dict containing client's data"""
         owner = None
         if self.owner_id != None:
@@ -44,7 +44,7 @@ class Client(db.Model):
         data = {"owner": owner, "id": self.id, "name": self.name, "description": self.description, "mail_to": self.mail_to, "webhook_url": self.webhook_url}
         return data
 
-    def gen_uid(self):
+    def generate_uid(self):
         """Generates a UID"""
         characters = string.ascii_letters + string.digits
         new_uid = "".join(random.choice(characters) for i in range(6))

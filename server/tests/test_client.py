@@ -36,8 +36,6 @@ def test_edit_client(client):
     assert client1.description == "desc2"
     rv = edit_client(client, access_header, 1, name="name3")
     assert b"Another client already uses this name" in rv.data
-    rv = edit_client(client, access_header, 1, name="")
-    assert b"Invalid name (too long or empty)" in rv.data
     rv = edit_client(client, access_header, 1, description="a" * 129)
     assert b"Invalid description (too long)"
     rv = edit_client(client, access_header, 1, owner=2)

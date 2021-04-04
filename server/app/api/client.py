@@ -3,8 +3,8 @@ from app.api import bp
 from app.decorators import permissions
 from app.models import XSS, Client, User
 from app.utils import generate_data_response, generate_message_response
-from app.validators import check_length, is_email, is_url
-from flask import jsonify, request
+from app.validators import is_email, is_url
+from flask import request
 from flask_jwt_extended import get_current_user, jwt_required
 
 
@@ -19,13 +19,14 @@ def client__post():
     if "name" not in request_body.keys() or not request_body["name"]:
         return generate_message_response("Missing client name", 400)
 
+    if "description" not in request_body.keys():
+        return generate_message_response("Missing description", 400)
+
     if Client.query.filter_by(name=request_body["name"]).first():
         return generate_message_response("Client already exists", 400)
 
-    client_description = request_body["description"] if "description" in request_body.keys() and request_body["description"] else None
-
-    new_client = Client(name=request_body["name"], description=client_description, owner_id=current_user.id)
-    new_client.gen_uid()
+    new_client = Client(name=request_body["name"], description=request_body["description"] if request_body["description"] else None, owner_id=current_user.id)
+    new_client.generate_uid()
     db.session.add(new_client)
     db.session.commit()
 
@@ -38,7 +39,7 @@ def client_clientid__get(client_id):
 
     client = Client.query.filter_by(id=client_id).first_or_404()
 
-    return generate_data_response(client.to_dict_client())
+    return generate_data_response(client.get_dict_representation())
 
 
 @bp.route("/client/<int:client_id>", methods=["PATCH"])
@@ -68,38 +69,36 @@ def client_clientid__patch(client_id):
 
         client.owner_id = request_body["owner"]
 
-    ### YOU ARE HERE
-
     if "mail_to" in request_body.keys():
 
-        if request_body["mail_to"] == "":
+        if not request_body["mail_to"]:
             client.mail_to = None
         else:
-            if is_email(request_body["mail_to"]) and check_length(request_body["mail_to"], 256):
-                client.mail_to = request_body["mail_to"]
-            else:
-                return jsonify({"status": "error", "detail": "Invalid mail recipient"}), 400
-    else:
-        client.mail_to = None
+            if not is_email(request_body["mail_to"]):
+                return generate_message_response("Invalid mail recipient", 400)
+
+            client.mail_to = request_body["mail_to"]
 
     if "webhook_url" in request_body.keys():
-        if is_url(request_body["webhook_url"]):
-            client.webhook_url = request_body["webhook_url"]
+
+        if not request_body["webhook_url"]:
+            client.webhook_url = None
         else:
-            return jsonify({"status": "error", "detail": "Webhook URL format is invalid"}), 400
-    else:
-        client.webhook_url = None
+            if not is_url(request_body["webhook_url"]):
+                return generate_message_response("Webhook URL format is invalid", 400)
+
+            client.webhook_url = request_body["webhook_url"]
 
     db.session.commit()
 
-    return jsonify({"status": "OK", "detail": "Client {} edited successfuly".format(client.name)}), 200
+    return generate_message_response(f"Client {client.name} edited successfuly")
 
 
 @bp.route("/client/<int:client_id>", methods=["DELETE"])
 @jwt_required()
 @permissions(one_of=["admin", "owner"])
-def client_delete(client_id):
-    """Deletes a client"""
+def client_clientid__delete(client_id):
+
     client = Client.query.filter_by(id=client_id).first_or_404()
 
     XSS.query.filter_by(client_id=client_id).delete()
@@ -107,18 +106,18 @@ def client_delete(client_id):
     db.session.delete(client)
     db.session.commit()
 
-    return jsonify({"status": "OK", "detail": "Client {} deleted successfuly".format(client.name)}), 200
+    return generate_message_response(f"Client {client.name} deleted successfuly")
 
 
 @bp.route("/client", methods=["GET"])
 @jwt_required()
-def client_all_get():
-    """Gets all clients"""
+def client__get():
+
     client_list = []
 
     clients = Client.query.order_by(Client.id.desc()).all()
 
     for client in clients:
-        client_list.append(client.to_dict_clients())
+        client_list.append(client.get_dashboard_stats())
 
-    return jsonify(client_list), 200
+    return generate_data_response(client_list)
