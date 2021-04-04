@@ -2,183 +2,164 @@ from app import db
 from app.api import bp
 from app.decorators import permissions
 from app.models import Settings
-from app.utils import send_mail, send_webhook
-from app.validators import check_length, is_email, is_url
-from flask import jsonify, request
+from app.utils import generate_data_response, generate_message_response, send_mail, send_webhook
+from app.validators import is_email, is_url
+from flask import request
 from flask_jwt_extended import jwt_required
 
 
 @bp.route("/settings", methods=["GET"])
 @jwt_required()
 @permissions(all_of=["admin"])
-def settings_get():
+def settings__get():
 
     settings = Settings.query.first()
 
-    return jsonify(settings.to_dict()), 200
+    return generate_data_response(settings.get_dict_representation())
 
 
 @bp.route("/settings", methods=["PATCH"])
 @jwt_required()
 @permissions(all_of=["admin"])
-def settings_post():
+def settings__patch():
 
-    data = request.get_json()
+    request_body = request.get_json()
 
     settings = Settings.query.first()
 
-    if "smtp_host" in data.keys():
+    if "smtp_host" in request_body.keys():
 
-        if data["smtp_host"] != "":
-
-            if check_length(data["smtp_host"], 256):
-                settings.smtp_host = data["smtp_host"]
-            else:
-                return jsonify({"status": "error", "detail": "Server address too long"}), 400
-
-            if "smtp_port" in data.keys():
-
-                try:
-                    smtp_port = int(data["smtp_port"])
-                except ValueError:
-                    return jsonify({"status": "error", "detail": "Port is invalid"}), 400
-
-                if smtp_port <= 65535 and smtp_port >= 0:
-                    settings.smtp_port = int(data["smtp_port"])
-                else:
-                    return jsonify({"status": "error", "detail": "Port is invalid"}), 400
-
-            else:
-                return jsonify({"status": "error", "detail": "Missing SMTP port"}), 400
-
-            if "starttls" in data.keys() and "ssl_tls" in data.keys():
-                return jsonify({"status": "error", "detail": "Cannot use STARTTLS and SSL/TLS at the same time"}), 400
-
-            if "starttls" in data.keys():
-                settings.starttls = True
-            else:
-                settings.starttls = False
-
-            if "ssl_tls" in data.keys():
-                settings.ssl_tls = True
-            else:
-                settings.ssl_tls = False
-
-            if "mail_from" in data.keys():
-                if is_email(data["mail_from"]) and check_length(data["mail_from"], 256):
-                    settings.mail_from = data["mail_from"]
-                else:
-                    return jsonify({"status": "error", "detail": "Email address format is invalid"}), 400
-
-            else:
-                return jsonify({"status": "error", "detail": "Missing sender address"}), 400
-
-            if "mail_to" in data.keys():
-                if is_email(data["mail_to"]):
-                    settings.mail_to = data["mail_to"]
-                else:
-                    return jsonify({"status": "error", "detail": "Recipient email address format is invalid"}), 400
-            else:
-                settings.mail_to = None
-
-            if "smtp_user" in data.keys():
-
-                if check_length(data["smtp_user"], 128):
-                    settings.smtp_user = data["smtp_user"]
-                else:
-                    return jsonify({"status": "error", "detail": "SMTP username too long"}), 400
-
-                if "smtp_pass" in data.keys():
-                    if check_length(data["smtp_pass"], 128):
-                        settings.smtp_pass = data["smtp_pass"]
-                    else:
-                        return jsonify({"status": "error", "detail": "SMTP password too long"}), 400
-
-            else:
-                settings.smtp_user = None
-                settings.smtp_pass = None
-
-        else:
+        if not request_body["smtp_host"]:
             settings.smtp_host = None
-            settings.smtp_port = None
-            settings.starttls = False
-            settings.ssl_tls = False
-            settings.mail_from = None
-            settings.mail_to = None
-            settings.smtp_user = None
-            settings.smtp_pass = None
-            settings.smtp_status = None
-
-    else:
-        settings.smtp_host = None
-        settings.smtp_port = None
-        settings.starttls = False
-        settings.ssl_tls = False
-        settings.mail_from = None
-        settings.mail_to = None
-        settings.smtp_user = None
-        settings.smtp_pass = None
-        settings.smtp_status = None
-
-    if "webhook_url" in data.keys():
-        if is_url(data["webhook_url"]):
-            settings.webhook_url = data["webhook_url"]
         else:
-            return jsonify({"status": "error", "detail": "Webhook URL format is invalid"}), 400
+            if "smtp_port" not in request_body.keys() or "smtp_mail_from" not in request_body.keys():
+                return generate_message_response("Missing required SMTP setting(s)", 400)
 
-    else:
-        settings.webhook_url = None
+            settings.smtp_host = request_body["smtp_host"]
+
+    if "smtp_port" in request_body.keys():
+
+        if request_body["smtp_port"] in ["", None]:
+            settings.smtp_port = None
+        else:
+            if not isinstance(request_body["smtp_port"], int) or request_body["smtp_port"] > 65535 or request_body["smtp_port"] < 0:
+                return generate_message_response("Port is invalid", 400)
+
+            settings.smtp_port = request_body["smtp_port"]
+
+    if "smtp_user" in request_body.keys():
+
+        if not request_body["smtp_user"]:
+            settings.smtp_user = None
+        else:
+            if "smtp_pass" not in request_body.keys():
+                return generate_message_response("Missing SMTP password", 400)
+
+            settings.smtp_user = request_body["smtp_user"]
+
+    if "smtp_pass" in request_body.keys():
+
+        if not request_body["smtp_pass"]:
+            settings.smtp_pass = None
+        else:
+            if "smtp_user" not in request_body.keys():
+                return generate_message_response("Missing SMTP username", 400)
+
+            settings.smtp_pass = request_body["smtp_pass"]
+
+    if "smtp_mail_from" in request_body.keys():
+
+        if not request_body["smtp_mail_from"]:
+            settings.smtp_mail_from = None
+        else:
+            if not is_email(request_body["smtp_mail_from"]):
+                return generate_message_response("Sender email address format is invalid", 400)
+
+            settings.smtp_mail_from = request_body["smtp_mail_from"]
+
+    if "smtp_mail_to" in request_body.keys():
+
+        if not request_body["smtp_mail_to"]:
+            settings.smtp_mail_to = None
+        else:
+            if not is_email(request_body["smtp_mail_to"]):
+                return generate_message_response("Recipient email address format is invalid", 400)
+
+            settings.smtp_mail_to = request_body["smtp_mail_to"]
+
+    if "smtp_ssl_tls" in request_body.keys():
+
+        if not request_body["smtp_ssl_tls"]:
+            settings.smtp_ssl_tls = False
+        else:
+            if not isinstance(request_body["smtp_ssl_tls"], bool):
+                return generate_message_response("smtp_ssl_tls parameter must be true or false", 400)
+
+            if "smtp_starttls" in request_body.keys():
+                return generate_message_response("Cannot use SSL/TLS and STARTTLS at the same time", 400)
+
+            settings.smtp_ssl_tls = request_body["smtp_ssl_tls"]
+
+    if "smtp_starttls" in request_body.keys():
+
+        if not request_body["smtp_starttls"]:
+            settings.smtp_starttls = False
+        else:
+            if not isinstance(request_body["smtp_starttls"], bool):
+                return generate_message_response("smtp_starttls parameter must be true or false", 400)
+
+            settings.smtp_starttls = request_body["smtp_starttls"]
+
+    if "webhook_url" in request_body.keys():
+
+        if not request_body["webhook_url"]:
+            settings.webhook_url = None
+        else:
+            if not is_url(request_body["webhook_url"]):
+                return generate_message_response("Webhook URL format is invalid", 400)
+
+            settings.webhook_url = request_body["webhook_url"]
 
     db.session.commit()
 
-    return jsonify({"status": "OK", "detail": "Configuration saved successfuly"}), 200
+    return generate_message_response("Configuration saved successfuly")
 
 
-@bp.route("/settings/smtp_test", methods=["POST"])
+@bp.route("/settings/test/smtp", methods=["POST"])
 @jwt_required()
 @permissions(all_of=["admin"])
-def smtp_test_post():
-    data = request.get_json()
+def settings_test_smtp__post():
 
-    settings = Settings.query.first()
+    request_body = request.get_json()
 
-    if "mail_to" not in data.keys():
-        return jsonify({"status": "error", "detail": "Missing recipient"}), 400
+    if "mail_to" not in request_body.keys() or not request_body["mail_to"]:
+        return generate_message_response("Missing recipient", 400)
 
-    if is_email(data["mail_to"]) and check_length(data["mail_to"], 256):
-
-        try:
-            send_mail(receiver=data["mail_to"])
-            settings.smtp_status = True
-            db.session.commit()
-            return jsonify({"status": "OK", "detail": "SMTP configuration test successful"}), 200
-        except:
-            settings.smtp_status = False
-            db.session.commit()
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "detail": "Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it. ",
-                    }
-                ),
-                400,
-            )
-    else:
-        return jsonify({"status": "error", "detail": "Invalid recipient"}), 400
-
-
-@bp.route("/settings/webhook_test", methods=["POST"])
-@jwt_required()
-@permissions(all_of=["admin"])
-def webhook_test_post():
-    data = request.get_json()
-
-    if "webhook_url" not in data.keys():
-        return jsonify({"status": "error", "detail": "Missing webhook url"}), 400
+    if not is_email(request_body["mail_to"]):
+        return generate_message_response("Invalid recipient", 400)
 
     try:
-        send_webhook(receiver=data["webhook_url"])
-        return jsonify({"status": "OK", "detail": "Webhook configuration test successful"}), 200
+        send_mail(receiver=request_body["mail_to"])
+        return generate_message_response("SMTP configuration test successful")
     except:
-        return jsonify({"status": "error", "detail": "Could not send test webhook"}), 400
+        return generate_message_response("Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it.", 400)
+
+
+@bp.route("/settings/test/webhook", methods=["POST"])
+@jwt_required()
+@permissions(all_of=["admin"])
+def settings_test_webhook__post():
+
+    request_body = request.get_json()
+
+    if "url" not in request_body.keys() or not request_body["url"]:
+        return generate_message_response("Missing URL", 400)
+
+    if not is_url(request_body["url"]):
+        return generate_message_response("Invalid URL", 400)
+
+    try:
+        send_webhook(receiver=request_body["url"])
+        return generate_message_response("Webhook configuration test successful")
+    except:
+        return generate_message_response("Could not send test webhook", 400)

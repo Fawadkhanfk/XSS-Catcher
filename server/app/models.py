@@ -124,31 +124,28 @@ class Settings(db.Model):
     """Holds app settings"""
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    smtp_host = db.Column(db.String(256), nullable=True)
+    smtp_host = db.Column(db.Text, nullable=True)
     smtp_port = db.Column(db.Integer, nullable=True)
-    starttls = db.Column(db.Boolean, default=False, nullable=True)
-    ssl_tls = db.Column(db.Boolean, default=False, nullable=True)
-    mail_from = db.Column(db.String(256), nullable=True)
-    smtp_user = db.Column(db.String(128), nullable=True)
-    smtp_pass = db.Column(db.String(128), nullable=True)
-    smtp_status = db.Column(db.Boolean, nullable=True)
-    mail_to = db.Column(db.Text, nullable=True)
+    smtp_mail_from = db.Column(db.Text, nullable=True)
+    smtp_mail_to = db.Column(db.Text, nullable=True)
+    smtp_user = db.Column(db.Text, nullable=True)
+    smtp_pass = db.Column(db.Text, nullable=True)
+    smtp_ssl_tls = db.Column(db.Boolean, default=False, nullable=True)
+    smtp_starttls = db.Column(db.Boolean, default=False, nullable=True)
     webhook_url = db.Column(db.Text, nullable=True)
 
-    def to_dict(self):
-        """Returns the settings"""
-        data = {
+    def get_dict_representation(self):
+
+        return {
             "smtp_host": self.smtp_host,
             "smtp_port": self.smtp_port,
-            "starttls": self.starttls,
-            "ssl_tls": self.ssl_tls,
-            "mail_from": self.mail_from,
-            "mail_to": self.mail_to,
+            "smtp_starttls": self.smtp_starttls,
+            "smtp_ssl_tls": self.smtp_ssl_tls,
+            "smtp_mail_from": self.smtp_mail_from,
+            "smtp_mail_to": self.smtp_mail_to,
             "smtp_user": self.smtp_user,
-            "smtp_status": self.smtp_status,
             "webhook_url": self.webhook_url,
         }
-        return data
 
 
 class Blocklist(db.Model):
