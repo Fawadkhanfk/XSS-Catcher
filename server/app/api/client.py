@@ -1,16 +1,17 @@
+import app.api.validators.client.edit_client as edit_client_validator
 from app import db
 from app.api import bp
+from app.api.validators.exceptions import ValidationException
 from app.decorators import permissions
-from app.models import XSS, Client, User
+from app.models import XSS, Client
 from app.utils import generate_data_response, generate_message_response
-from app.validators import is_email, is_url
 from flask import request
 from flask_jwt_extended import get_current_user, jwt_required
 
 
 @bp.route("/client", methods=["POST"])
 @jwt_required()
-def client__post():
+def create_client():
 
     current_user = get_current_user()
 
@@ -35,7 +36,7 @@ def client__post():
 
 @bp.route("/client/<int:client_id>", methods=["GET"])
 @jwt_required()
-def client_clientid__get(client_id):
+def get_client(client_id):
 
     client = Client.query.filter_by(id=client_id).first_or_404()
 
@@ -45,49 +46,30 @@ def client_clientid__get(client_id):
 @bp.route("/client/<int:client_id>", methods=["PATCH"])
 @jwt_required()
 @permissions(one_of=["admin", "owner"])
-def client_clientid__patch(client_id):
+def edit_client(client_id):
 
     request_body = request.get_json()
 
     client = Client.query.filter_by(id=client_id).first_or_404()
 
-    if "name" in request_body.keys() and request_body["name"]:
+    try:
+        if "name" in request_body.keys() and request_body["name"]:
+            client.name = edit_client_validator.validate_name(request_body, client)
 
-        if client.name != request_body["name"] and Client.query.filter_by(name=request_body["name"]).first():
-            return generate_message_response("Another client already uses this name", 400)
+        if "description" in request_body.keys():
+            client.description = edit_client_validator.validate_description(request_body)
 
-        client.name = request_body["name"]
+        if "owner" in request_body.keys() and request_body["owner"] not in [None, ""]:
+            client.owner_id = edit_client_validator.validate_owner(request_body)
 
-    if "description" in request_body.keys():
+        if "mail_to" in request_body.keys():
+            client.mail_to = edit_client_validator.validate_mail_to(request_body)
 
-        client.description = request_body["description"] if request_body["description"] else None
+        if "webhook_url" in request_body.keys():
+            client.webhook_url = edit_client_validator.validate_webhook_url(request_body)
 
-    if "owner" in request_body.keys() and request_body["owner"] not in [None, ""]:
-
-        if not User.query.filter_by(id=request_body["owner"]).first():
-            return generate_message_response("This user does not exist", 400)
-
-        client.owner_id = request_body["owner"]
-
-    if "mail_to" in request_body.keys():
-
-        if not request_body["mail_to"]:
-            client.mail_to = None
-        else:
-            if not is_email(request_body["mail_to"]):
-                return generate_message_response("Invalid mail recipient", 400)
-
-            client.mail_to = request_body["mail_to"]
-
-    if "webhook_url" in request_body.keys():
-
-        if not request_body["webhook_url"]:
-            client.webhook_url = None
-        else:
-            if not is_url(request_body["webhook_url"]):
-                return generate_message_response("Webhook URL format is invalid", 400)
-
-            client.webhook_url = request_body["webhook_url"]
+    except ValidationException as error:
+        return generate_message_response(str(error), 400)
 
     db.session.commit()
 
@@ -97,7 +79,7 @@ def client_clientid__patch(client_id):
 @bp.route("/client/<int:client_id>", methods=["DELETE"])
 @jwt_required()
 @permissions(one_of=["admin", "owner"])
-def client_clientid__delete(client_id):
+def delete_client(client_id):
 
     client = Client.query.filter_by(id=client_id).first_or_404()
 
@@ -111,7 +93,7 @@ def client_clientid__delete(client_id):
 
 @bp.route("/client", methods=["GET"])
 @jwt_required()
-def client__get():
+def get_client_list():
 
     client_list = []
 

@@ -114,7 +114,7 @@ class User(db.Model):
         characters = string.ascii_letters + string.digits
         return "".join(random.choice(characters) for i in range(12))
 
-    def to_dict(self):
+    def get_dict_representation(self):
         """Returns a representation of the user"""
         data = {"id": self.id, "username": self.username, "first_login": self.first_login, "is_admin": self.is_admin}
         return data

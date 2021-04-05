@@ -12,8 +12,6 @@ def test_new_user(client):
     assert User.query.count() == 2
     rv = new_user(client, access_header)
     assert b"Missing username" in rv.data
-    rv = new_user(client, access_header, username="")
-    assert b"Invalid username (too long or empty)" in rv.data
     rv = new_user(client, access_header, username="test")
     assert b"This user already exists" in rv.data
 
@@ -21,7 +19,7 @@ def test_new_user(client):
 def test_change_password(client):
     access_header, refresh_header = login_get_headers(client, "admin", "xss")
     rv = change_password(client, access_header)
-    assert b"Missing data (password1, password2 or old_password)" in rv.data
+    assert b"Missing data" in rv.data
     rv = change_password(client, access_header, old_password="xss", password1="a", password2="a")
     assert b"Password must be at least 8 characters and contain a uppercase letter, a lowercase letter and a number" in rv.data
     rv = change_password(client, access_header, old_password="xss", password1="Password123!", password2="Password122!")
@@ -38,7 +36,7 @@ def test_reset_password(client):
     access_header, refresh_header = login_get_headers(client, "admin", "xss")
     new_user(client, access_header, username="test")
     rv = reset_password(client, access_header, 2)
-    password = json.loads(rv.data)["detail"]
+    password = json.loads(rv.data)["message"]
     logout(client, refresh_header)
     rv = login(client, {}, username="test", password=password, remember=False)
     assert rv._status_code == 200
@@ -64,13 +62,13 @@ def test_delete_user(client):
 def test_edit_user(client):
     access_header, _ = login_get_headers(client, "admin", "xss")
     new_user(client, access_header, username="test")
-    rv = edit_user(client, access_header, 1, is_admin=0)
+    rv = edit_user(client, access_header, 1, is_admin=False)
     assert b"Can't demote yourself" in rv.data
     rv = edit_user(client, access_header, 2)
     assert b"Missing data" in rv.data
-    rv = edit_user(client, access_header, 2, is_admin=2)
+    rv = edit_user(client, access_header, 2, is_admin="a")
     assert b"Invalid data" in rv.data
-    rv = edit_user(client, access_header, 2, is_admin=1)
+    rv = edit_user(client, access_header, 2, is_admin=True)
     assert b"modified successfuly" in rv.data
 
 

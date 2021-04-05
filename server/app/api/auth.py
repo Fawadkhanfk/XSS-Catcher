@@ -8,7 +8,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_cu
 
 @bp.route("/auth/login", methods=["POST"])
 @jwt_required(optional=True)
-def auth_login__post():
+def login():
 
     if get_current_user():
         return generate_message_response("Already logged in", 400)
@@ -28,14 +28,14 @@ def auth_login__post():
 
 @bp.route("/auth/refresh", methods=["POST"])
 @jwt_required(refresh=True)
-def auth_refresh__post():
+def refresh_token():
 
     return generate_data_response({"access_token": create_access_token(identity=get_current_user().username)})
 
 
 @bp.route("/auth/logout", methods=["POST"])
 @jwt_required(refresh=True)
-def auth_logout__post():
+def logout():
 
     blocked_jti = Blocklist(jti=get_jwt()["jti"])
     db.session.add(blocked_jti)
