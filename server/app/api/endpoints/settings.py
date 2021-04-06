@@ -1,11 +1,9 @@
-import app.api.validators.settings.edit_settings as edit_settings_validators
+import app.api.utils.validators.settings.edit_settings as edit_settings_validators
 from app import db
-from app.api import bp
-from app.api.validators.exceptions import ValidationException
-from app.decorators import permissions
+from app.api.endpoints import bp
+from app.api.utils.shared import generate_data_response, generate_message_response, permissions, send_mail, send_webhook
+from app.api.utils.validators.shared import ValidationException, is_email, is_url
 from app.models import Settings
-from app.utils import generate_data_response, generate_message_response, send_mail, send_webhook
-from app.validators import is_email, is_url
 from flask import request
 from flask_jwt_extended import jwt_required
 

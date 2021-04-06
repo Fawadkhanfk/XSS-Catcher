@@ -1,8 +1,8 @@
 import json
 
 import pytest
+from app.api.utils.shared import send_mail
 from app.models import Settings
-from app.utils import send_mail
 
 from .fixtures import client
 from .functions import *

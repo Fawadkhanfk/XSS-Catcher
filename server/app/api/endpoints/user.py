@@ -1,10 +1,9 @@
-import app.api.validators.user.change_current_user_password as change_current_user_password_validators
+import app.api.utils.validators.user.change_current_user_password as change_current_user_password_validators
 from app import db
-from app.api import bp
-from app.api.validators.exceptions import ValidationException
-from app.decorators import permissions
+from app.api.endpoints import bp
+from app.api.utils.shared import generate_data_response, generate_message_response, permissions
+from app.api.utils.validators.shared import ValidationException
 from app.models import User
-from app.utils import generate_data_response, generate_message_response
 from flask import jsonify, request
 from flask_jwt_extended import get_current_user, jwt_required
 
@@ -26,7 +25,7 @@ def create_user():
     user = User(username=request_body["username"])
 
     password = user.generate_password()
-    user.set_password(user.generate_password())
+    user.set_password(password)
 
     db.session.add(user)
     db.session.commit()

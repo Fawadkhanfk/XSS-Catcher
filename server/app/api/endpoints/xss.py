@@ -2,8 +2,8 @@ import base64
 import json
 
 from app import db
-from app.api import bp
-from app.decorators import permissions
+from app.api.endpoints import bp
+from app.api.utils.shared import permissions
 from app.models import XSS, Client
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required

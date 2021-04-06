@@ -1,7 +1,7 @@
 from app import db
-from app.api import bp
+from app.api.endpoints import bp
+from app.api.utils.shared import generate_data_response, generate_message_response
 from app.models import Blocklist, User
-from app.utils import generate_data_response, generate_message_response
 from flask import request
 from flask_jwt_extended import create_access_token, create_refresh_token, get_current_user, get_jwt, jwt_required
 

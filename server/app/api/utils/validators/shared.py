@@ -1,6 +1,10 @@
 import re
 
 
+class ValidationException(Exception):
+    pass
+
+
 def is_email(email: str) -> bool:
 
     return bool(re.match(r"^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$", email))

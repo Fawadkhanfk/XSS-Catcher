@@ -9,7 +9,7 @@ from .functions import *
 def test_permissions(client):
     access_header, refresh_header = login_get_headers(client, "admin", "xss")
     rv = new_user(client, access_header, username="test")
-    password = json.loads(rv.data)["detail"]
+    password = json.loads(rv.data)["message"]
     create_client(client, access_header, name="name1", description="desc1")
     logout(client, refresh_header)
     access_header, _ = login_get_headers(client, "test", password)

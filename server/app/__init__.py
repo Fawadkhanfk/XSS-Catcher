@@ -19,7 +19,7 @@ def create_app(config_class=Config):
     jwt.init_app(app)
     cors.init_app(app, resources={r"/x/*": {"origins": "*"}})
 
-    from app.api import bp as api_bp
+    from app.api.endpoints import bp as api_bp
 
     app.register_blueprint(api_bp, url_prefix="/api")
 
