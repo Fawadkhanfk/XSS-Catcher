@@ -1,4 +1,4 @@
-from app.api.utils.validators.shared import ValidationException, is_password
+from app.api.validators.shared import ValidationException, is_password
 from app.models import User
 
 

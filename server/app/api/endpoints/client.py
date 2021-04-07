@@ -1,8 +1,8 @@
-import app.api.utils.validators.client.edit_client as edit_client_validator
+import app.api.validators.client.edit_client as edit_client_validator
 from app import db
 from app.api.endpoints import bp
 from app.api.utils.shared import generate_data_response, generate_message_response, permissions
-from app.api.utils.validators.shared import ValidationException
+from app.api.validators.shared import ValidationException
 from app.models import XSS, Client
 from flask import request
 from flask_jwt_extended import get_current_user, jwt_required

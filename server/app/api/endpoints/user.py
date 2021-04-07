@@ -1,8 +1,8 @@
-import app.api.utils.validators.user.change_current_user_password as change_current_user_password_validators
+import app.api.validators.user.change_current_user_password as change_current_user_password_validators
 from app import db
 from app.api.endpoints import bp
 from app.api.utils.shared import generate_data_response, generate_message_response, permissions
-from app.api.utils.validators.shared import ValidationException
+from app.api.validators.shared import ValidationException
 from app.models import User
 from flask import jsonify, request
 from flask_jwt_extended import get_current_user, jwt_required

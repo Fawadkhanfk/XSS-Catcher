@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.api.utils.validators.shared import ValidationException, is_email, is_url
+from app.api.validators.shared import ValidationException, is_email, is_url
 from app.models import Client, User
 
 

