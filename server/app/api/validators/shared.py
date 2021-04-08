@@ -11,7 +11,7 @@ def is_email(email: str) -> bool:
 
 
 def is_password(password: str) -> bool:
-    """Checks password requirements"""
+
     return bool(
         len(password) >= 8
         and re.search("[0-9]", password) is not None
@@ -21,4 +21,5 @@ def is_password(password: str) -> bool:
 
 
 def is_url(url: str) -> bool:
+
     return bool(re.match(r"^https?://.+$", url))

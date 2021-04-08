@@ -66,7 +66,7 @@ class XSS(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey("client.id"))
     xss_type = db.Column(db.String(9))
 
-    def to_dict(self):
+    def get_dict_representation(self):
         """Returns full representation of XSS"""
         data = {
             "id": self.id,
@@ -85,7 +85,7 @@ class XSS(db.Model):
 
         return data
 
-    def to_dict_short(self):
+    def get_summary(self):
         """Returns an abridged representation of XSS"""
         data = {"id": self.id, "ip_addr": self.ip_addr, "timestamp": self.timestamp, "tags": json.loads(self.tags)}
         return data

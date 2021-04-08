@@ -70,50 +70,48 @@ def generate_message_response(message: str, status_code: int = 200) -> tuple:
 
 
 def permissions(all_of=[], one_of=[]):
-    """Manages permissions"""
-
-    def deco(orig_func):
-        @wraps(orig_func)
-        def new_func(*args, **kwargs):
+    def decorator(original_function):
+        @wraps(original_function)
+        def new_function(*args, **kwargs):
             current_user = get_current_user()
-            if len(all_of) != 0:
+            if all_of:
                 if "admin" in all_of:
                     if not current_user.is_admin:
-                        return jsonify({"status": "error", "detail": "Only an administrator can do that"}), 403
+                        return generate_message_response("Only an administrator can do that", 403)
 
                 if "owner" in all_of:
                     if "client_id" in kwargs:
                         client = Client.query.filter_by(id=kwargs["client_id"]).first_or_404()
                         if current_user.id != client.owner_id:
-                            return jsonify({"status": "error", "detail": "You are not the client's owner"}), 403
+                            return generate_message_response("You are not the client's owner", 403)
 
                     if "xss_id" in kwargs:
                         xss = XSS.query.filter_by(id=kwargs["xss_id"]).first_or_404()
                         if current_user.id != xss.client.owner_id:
-                            return jsonify({"status": "error", "detail": "You are not the client's owner"}), 403
+                            return generate_message_response("You are not the client's owner", 403)
 
-                return orig_func(*args, **kwargs)
+                return original_function(*args, **kwargs)
 
-            elif len(one_of) != 0:
+            elif one_of:
                 if "admin" in one_of:
                     if current_user.is_admin:
-                        return orig_func(*args, **kwargs)
+                        return original_function(*args, **kwargs)
 
                 if "owner" in one_of:
                     if "client_id" in kwargs:
                         client = Client.query.filter_by(id=kwargs["client_id"]).first_or_404()
                         if current_user.id == client.owner_id:
-                            return orig_func(*args, **kwargs)
+                            return original_function(*args, **kwargs)
                     if "xss_id" in kwargs:
                         xss = XSS.query.filter_by(id=kwargs["xss_id"]).first_or_404()
                         if current_user.id == xss.client.owner_id:
-                            return orig_func(*args, **kwargs)
+                            return original_function(*args, **kwargs)
 
-                return jsonify({"status": "error", "detail": "Insufficient permissions"}), 403
+                return generate_message_response("Insufficient permissions", 403)
 
             else:
-                return orig_func(*args, **kwargs)
+                return original_function(*args, **kwargs)
 
-        return new_func
+        return new_function
 
-    return deco
+    return decorator
