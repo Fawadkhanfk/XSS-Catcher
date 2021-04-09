@@ -2,11 +2,11 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from functools import wraps
-from typing import Any
+from typing import Callable, Dict, Hashable, Iterable, List, Tuple, Union
 
 import requests
 from app.models import XSS, Client, Settings
-from flask import jsonify
+from flask import Response, jsonify
 from flask_jwt_extended import get_current_user
 
 
@@ -61,15 +61,15 @@ def smtp_server_login(settings: Settings, server: smtplib.SMTP) -> None:
         server.login(settings.smtp_user, settings.smtp_pass)
 
 
-def generate_data_response(message: Any, status_code: int = 200) -> tuple:
+def generate_data_response(message: Union[List, Dict], status_code: int = 200) -> Tuple[Response, int]:
     return jsonify(message), status_code
 
 
-def generate_message_response(message: str, status_code: int = 200) -> tuple:
+def generate_message_response(message: str, status_code: int = 200) -> Tuple[Response, int]:
     return jsonify({"message": message}), status_code
 
 
-def permissions(all_of=[], one_of=[]):
+def permissions(all_of: Iterable[Hashable] = [], one_of: Iterable[Hashable] = []) -> Callable:
     def decorator(original_function):
         @wraps(original_function)
         def new_function(*args, **kwargs):

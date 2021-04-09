@@ -43,10 +43,10 @@ def generate_xss_payload():
     client = Client.query.filter_by(id=request_body["client_id"]).first_or_404()
 
     if request_body["code_type"] == "html":
-        payload = generate_html_payload(request_body["data_to_gather"], request_body["tags"], request_body["url"], request_body["xss_type"], client)
+        payload = generate_html_payload(request_body, client)
 
     else:
-        payload = generate_javascript_payload(request_body["data_to_gather"], request_body["tags"], request_body["url"], request_body["xss_type"], client)
+        payload = generate_javascript_payload(request_body, client)
 
     return generate_message_response(payload)
 

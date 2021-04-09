@@ -1,8 +1,10 @@
+from typing import Dict
+
 from app.api.validators.shared import ValidationException, is_password
 from app.models import User
 
 
-def validate_passwords(request_body: dict, current_user: User) -> str:
+def validate_passwords(request_body: Dict, current_user: User) -> str:
     if ("password1" not in request_body.keys()) or ("password2" not in request_body.keys()) or ("old_password" not in request_body.keys()):
         raise ValidationException("Missing data")
 

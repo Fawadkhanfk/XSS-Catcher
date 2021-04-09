@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Dict, Optional
 
 from app.api.validators.shared import ValidationException, is_email, is_url
 
 
-def validate_smtp_host(request_body: dict) -> Optional[str]:
+def validate_smtp_host(request_body: Dict) -> Optional[str]:
 
     if not request_body["smtp_host"]:
         return
@@ -14,7 +14,7 @@ def validate_smtp_host(request_body: dict) -> Optional[str]:
         return request_body["smtp_host"]
 
 
-def validate_smtp_port(request_body: dict) -> Optional[int]:
+def validate_smtp_port(request_body: Dict) -> Optional[int]:
 
     if request_body["smtp_port"] in ["", None]:
         return
@@ -25,7 +25,7 @@ def validate_smtp_port(request_body: dict) -> Optional[int]:
         return request_body["smtp_port"]
 
 
-def validate_smtp_user(request_body: dict) -> Optional[str]:
+def validate_smtp_user(request_body: Dict) -> Optional[str]:
 
     if not request_body["smtp_user"]:
         return
@@ -36,7 +36,7 @@ def validate_smtp_user(request_body: dict) -> Optional[str]:
         return request_body["smtp_user"]
 
 
-def validate_smtp_pass(request_body: dict) -> Optional[str]:
+def validate_smtp_pass(request_body: Dict) -> Optional[str]:
 
     if not request_body["smtp_pass"]:
         return
@@ -47,7 +47,7 @@ def validate_smtp_pass(request_body: dict) -> Optional[str]:
         return request_body["smtp_pass"]
 
 
-def validate_mail_from(request_body: dict) -> Optional[str]:
+def validate_mail_from(request_body: Dict) -> Optional[str]:
 
     if not request_body["smtp_mail_from"]:
         return
@@ -58,7 +58,7 @@ def validate_mail_from(request_body: dict) -> Optional[str]:
         return request_body["smtp_mail_from"]
 
 
-def validate_mail_to(request_body: dict) -> Optional[str]:
+def validate_mail_to(request_body: Dict) -> Optional[str]:
 
     if not request_body["smtp_mail_to"]:
         return
@@ -69,7 +69,7 @@ def validate_mail_to(request_body: dict) -> Optional[str]:
         return request_body["smtp_mail_to"]
 
 
-def validate_smtp_ssl_tls(request_body: dict) -> Optional[bool]:
+def validate_smtp_ssl_tls(request_body: Dict) -> Optional[bool]:
 
     if not request_body["smtp_ssl_tls"]:
         return False
@@ -83,7 +83,7 @@ def validate_smtp_ssl_tls(request_body: dict) -> Optional[bool]:
         return request_body["smtp_ssl_tls"]
 
 
-def validate_smtp_starttls(request_body: dict) -> Optional[bool]:
+def validate_smtp_starttls(request_body: Dict) -> Optional[bool]:
 
     if not request_body["smtp_starttls"]:
         return False
@@ -97,7 +97,7 @@ def validate_smtp_starttls(request_body: dict) -> Optional[bool]:
         return request_body["smtp_starttls"]
 
 
-def validate_webhook_url(request_body: dict) -> Optional[str]:
+def validate_webhook_url(request_body: Dict) -> Optional[str]:
 
     if not request_body["webhook_url"]:
         return
