@@ -39,8 +39,8 @@ def upgrade():
         xss.data = json.dumps(xss_data)
 
         xss_headers = json.loads(xss.headers)
-        new_headers = {}
         if isinstance(xss_headers, list):
+            new_headers = {}
             for header in xss_headers:
                 new_headers.update(header)
             xss.headers = json.dumps(new_headers)

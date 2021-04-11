@@ -1,78 +1,75 @@
 import json
 import random
 import string
+from typing import Dict
 
 from app import db, jwt
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 class Client(db.Model):
-    """Defines a client"""
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    uid = db.Column(db.String(6), unique=True, nullable=False)
-    name = db.Column(db.String(32), unique=True, nullable=False)
-    description = db.Column(db.String(128), nullable=True)
-    mail_to = db.Column(db.String(256), nullable=True)
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.Text, unique=True, nullable=False)
+    name = db.Column(db.Text, unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    mail_to = db.Column(db.Text, nullable=True)
     webhook_url = db.Column(db.Text, nullable=True)
     xss = db.relationship("XSS", backref="client", lazy="dynamic")
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     def get_dashboard_stats(self):
-        """Returns a dict containing client's data to be displayed in a list of clients"""
-        data_num = 0
+
+        number_of_captured_data = 0
         xss = XSS.query.filter_by(client_id=self.id).all()
         for hit in xss:
-            data_num += len(json.loads(hit.data))
-        data = {
+            number_of_captured_data += len(json.loads(hit.data))
+        return {
             "owner_id": self.owner_id,
             "id": self.id,
             "name": self.name,
             "reflected": XSS.query.filter_by(client_id=self.id).filter_by(xss_type="reflected").count(),
             "stored": XSS.query.filter_by(client_id=self.id).filter_by(xss_type="stored").count(),
-            "data": data_num,
+            "data": number_of_captured_data,
         }
-        return data
 
     def get_dict_representation(self):
-        """Returns a dict containing client's data"""
-        owner = None
-        if self.owner_id != None:
+
+        if self.owner_id:
             owner = User.query.filter_by(id=self.owner_id).first().username
-        if owner == None:
+        else:
             owner = "Nobody"
-        data = {"owner": owner, "id": self.id, "name": self.name, "description": self.description, "mail_to": self.mail_to, "webhook_url": self.webhook_url}
-        return data
+        return {"owner": owner, "id": self.id, "name": self.name, "description": self.description, "mail_to": self.mail_to, "webhook_url": self.webhook_url}
 
     def generate_uid(self):
-        """Generates a UID"""
-        characters = string.ascii_letters + string.digits
-        new_uid = "".join(random.choice(characters) for i in range(6))
 
-        while Client.query.filter_by(uid=new_uid).first() != None:
-            new_uid = "".join(random.choice(characters) for i in range(6))
+        characters = string.ascii_letters + string.digits
+        new_uid = "".join(random.choice(characters) for _ in range(6))
+
+        while Client.query.filter_by(uid=new_uid).first():
+            new_uid = "".join(random.choice(characters) for _ in range(6))
+
         self.uid = new_uid
 
 
 class XSS(db.Model):
-    """Defines an XSS"""
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    headers = db.Column(db.Text)
-    ip_addr = db.Column(db.String(15))
-    data = db.Column(db.Text)
+    id = db.Column(db.Integer, primary_key=True)
+    headers = db.Column(db.Text, server_default="{}", nullable=False)
+    ip_addr = db.Column(db.Text, nullable=False)
+    data = db.Column(db.Text, server_default="{}", nullable=False)
     tags = db.Column(db.Text, server_default="[]", nullable=False)
-    timestamp = db.Column(db.Integer)
-    client_id = db.Column(db.Integer, db.ForeignKey("client.id"))
-    xss_type = db.Column(db.String(9))
+    timestamp = db.Column(db.Integer, nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("client.id"), nullable=False)
+    xss_type = db.Column(db.Text, nullable=False)
 
     def get_dict_representation(self):
-        """Returns full representation of XSS"""
+
         data = {
             "id": self.id,
             "headers": json.loads(self.headers),
             "ip_addr": self.ip_addr,
-            "data": json.loads(self.data) if self.data != None else self.data,
+            "data": json.loads(self.data),
             "timestamp": self.timestamp,
             "tags": json.loads(self.tags),
         }
@@ -86,44 +83,40 @@ class XSS(db.Model):
         return data
 
     def get_summary(self):
-        """Returns an abridged representation of XSS"""
-        data = {"id": self.id, "ip_addr": self.ip_addr, "timestamp": self.timestamp, "tags": json.loads(self.tags)}
-        return data
+
+        return {"id": self.id, "ip_addr": self.ip_addr, "timestamp": self.timestamp, "tags": json.loads(self.tags)}
 
 
 class User(db.Model):
-    """Defines a user"""
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    username = db.Column(db.String(128), unique=True, nullable=False)
-    password_hash = db.Column(db.String(95), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.Text, unique=True, nullable=False)
+    password_hash = db.Column(db.Text, nullable=False)
     first_login = db.Column(db.Boolean, nullable=False, default=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     client = db.relationship("Client", backref="owner", lazy="dynamic")
 
     def set_password(self, password):
-        """Sets user's password"""
+
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        """Validates user's password"""
+
         return check_password_hash(self.password_hash, password)
 
     def generate_password(self):
-        """Generates a new password"""
+
         characters = string.ascii_letters + string.digits
-        return "".join(random.choice(characters) for i in range(12))
+        return "".join(random.choice(characters) for _ in range(12))
 
     def get_dict_representation(self):
-        """Returns a representation of the user"""
-        data = {"id": self.id, "username": self.username, "first_login": self.first_login, "is_admin": self.is_admin}
-        return data
+
+        return {"id": self.id, "username": self.username, "first_login": self.first_login, "is_admin": self.is_admin}
 
 
 class Settings(db.Model):
-    """Holds app settings"""
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
     smtp_host = db.Column(db.Text, nullable=True)
     smtp_port = db.Column(db.Integer, nullable=True)
     smtp_mail_from = db.Column(db.Text, nullable=True)
@@ -149,27 +142,29 @@ class Settings(db.Model):
 
 
 class Blocklist(db.Model):
-    "Holds blocked refresh token jti"
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    jti = db.Column(db.String(64), nullable=False, unique=True)
+
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.Text, nullable=False, unique=True)
 
 
 @jwt.user_lookup_loader
-def user_loader_callback(_, jwt_payload):
+def user_loader_callback(jwt_header: Dict, jwt_payload: Dict) -> User:
+
     return User.query.filter_by(username=jwt_payload["sub"]).first()
 
 
 @jwt.token_in_blocklist_loader
-def check_if_token_in_blocklist(_, jwt_payload):
+def check_if_token_in_blocklist(jwt_header: Dict, jwt_payload: Dict) -> bool:
+
     if jwt_payload["type"] == "access":
         return False
     else:
         blocked_jti = Blocklist.query.filter_by(jti=jwt_payload["jti"]).first()
-        return True if blocked_jti else False
+        return bool(blocked_jti)
 
 
 def init_app(app):
-    """Creates the admin user and the settings"""
+
     with app.app_context():
         if db.session.query(User).count() != 0:
             print("[-] User creation not needed")
