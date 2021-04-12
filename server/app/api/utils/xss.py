@@ -1,6 +1,6 @@
 import base64
 import json
-from typing import Dict, Hashable, Iterable, List
+from typing import Dict, Iterable, List
 
 from app.api.validators.shared import ValidationException
 from app.models import XSS, Client
@@ -149,12 +149,12 @@ def generate_javascript_payload_without_data(request_body: Dict, client: Client)
     return payload_prefix + payload_core + payload_suffix
 
 
-def generate_data_to_gather_parameters(data_to_gather: Iterable[Hashable]) -> str:
+def generate_data_to_gather_parameters(data_to_gather: Iterable[str]) -> str:
 
     return "&".join([v for k, v in PAYLOADS.items() if k in data_to_gather]).rstrip('+"')
 
 
-def generate_get_xss_list_filter_expression(query_parameters: Dict[Hashable, Hashable]) -> Dict[Hashable, Hashable]:
+def generate_get_xss_list_filter_expression(query_parameters: Dict) -> Dict:
 
     filter_expression = {}
 
@@ -173,7 +173,7 @@ def generate_get_xss_list_filter_expression(query_parameters: Dict[Hashable, Has
     return filter_expression
 
 
-def generate_get_xss_captured_data_filter_expression(query_parameters: Dict[Hashable, Hashable]) -> Dict[Hashable, Hashable]:
+def generate_get_xss_captured_data_filter_expression(query_parameters: Dict) -> Dict:
 
     filter_expression = {}
 

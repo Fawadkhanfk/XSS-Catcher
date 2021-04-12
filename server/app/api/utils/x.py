@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Dict, Hashable, List, Tuple
+from typing import Dict, List, Tuple
 
 from app.api.utils.shared import send_mail, send_webhook
 from app.models import XSS, Client, Settings
@@ -22,7 +22,7 @@ def generate_xss_properties(request: LocalProxy, xss_type: str, client: Client) 
     }
 
 
-def parse_parameters(request: LocalProxy) -> Tuple[Dict, List[Hashable]]:
+def parse_parameters(request: LocalProxy) -> Tuple[Dict, List[str]]:
 
     xss_data = {}
     tags = []
@@ -69,7 +69,7 @@ def extract_parameters_from_request(request: LocalProxy) -> Dict:
     return parameters
 
 
-def parse_cookies(cookies_raw: str) -> Dict[Hashable, str]:
+def parse_cookies(cookies_raw: str) -> Dict:
 
     cookies = {}
 
@@ -83,7 +83,7 @@ def parse_cookies(cookies_raw: str) -> Dict[Hashable, str]:
     return cookies
 
 
-def parse_storage(storage_raw: str) -> Dict[Hashable, str]:
+def parse_storage(storage_raw: str) -> Dict:
 
     storage = {}
 

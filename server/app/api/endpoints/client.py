@@ -26,7 +26,7 @@ def create_client():
         return generate_message_response("Client already exists", 400)
 
     new_client = Client(name=request_body["name"], description=request_body["description"] if request_body["description"] else None, owner_id=current_user.id)
-    new_client.generate_uid()
+    new_client.uid = new_client.generate_uid()
     db.session.add(new_client)
     db.session.commit()
 

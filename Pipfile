@@ -19,6 +19,7 @@ isort = "*"
 pre-commit = "*"
 pytest = "*"
 pytest-cov = "*"
+pytest-mock = "*"
 
 [requires]
 python_version = "3.8"

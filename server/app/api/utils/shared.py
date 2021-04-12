@@ -2,7 +2,7 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from functools import wraps
-from typing import Callable, Dict, Hashable, Iterable, List, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Tuple, Union
 
 import requests
 from app.models import XSS, Client, Settings
@@ -69,7 +69,7 @@ def generate_message_response(message: str, status_code: int = 200) -> Tuple[Res
     return jsonify({"message": message}), status_code
 
 
-def permissions(all_of: Iterable[Hashable] = [], one_of: Iterable[Hashable] = []) -> Callable:
+def permissions(all_of: Iterable[str] = [], one_of: Iterable[str] = []) -> Callable:
     def decorator(original_function):
         @wraps(original_function)
         def new_function(*args, **kwargs):

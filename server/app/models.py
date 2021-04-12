@@ -4,6 +4,7 @@ import string
 from typing import Dict
 
 from app import db, jwt
+from flask import Flask
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -18,7 +19,7 @@ class Client(db.Model):
     xss = db.relationship("XSS", backref="client", lazy="dynamic")
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
-    def get_dashboard_stats(self):
+    def get_dashboard_stats(self) -> Dict:
 
         number_of_captured_data = 0
         xss = XSS.query.filter_by(client_id=self.id).all()
@@ -33,7 +34,7 @@ class Client(db.Model):
             "data": number_of_captured_data,
         }
 
-    def get_dict_representation(self):
+    def get_dict_representation(self) -> Dict:
 
         if self.owner_id:
             owner = User.query.filter_by(id=self.owner_id).first().username
@@ -41,7 +42,7 @@ class Client(db.Model):
             owner = "Nobody"
         return {"owner": owner, "id": self.id, "name": self.name, "description": self.description, "mail_to": self.mail_to, "webhook_url": self.webhook_url}
 
-    def generate_uid(self):
+    def generate_uid(self) -> str:
 
         characters = string.ascii_letters + string.digits
         new_uid = "".join(random.choice(characters) for _ in range(6))
@@ -49,7 +50,7 @@ class Client(db.Model):
         while Client.query.filter_by(uid=new_uid).first():
             new_uid = "".join(random.choice(characters) for _ in range(6))
 
-        self.uid = new_uid
+        return new_uid
 
 
 class XSS(db.Model):
@@ -63,7 +64,7 @@ class XSS(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey("client.id"), nullable=False)
     xss_type = db.Column(db.Text, nullable=False)
 
-    def get_dict_representation(self):
+    def get_dict_representation(self) -> Dict:
 
         data = {
             "id": self.id,
@@ -82,7 +83,7 @@ class XSS(db.Model):
 
         return data
 
-    def get_summary(self):
+    def get_summary(self) -> Dict:
 
         return {"id": self.id, "ip_addr": self.ip_addr, "timestamp": self.timestamp, "tags": json.loads(self.tags)}
 
@@ -96,20 +97,20 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     client = db.relationship("Client", backref="owner", lazy="dynamic")
 
-    def set_password(self, password):
+    def set_password(self, password: str) -> None:
 
         self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
 
         return check_password_hash(self.password_hash, password)
 
-    def generate_password(self):
+    def generate_password(self) -> str:
 
         characters = string.ascii_letters + string.digits
         return "".join(random.choice(characters) for _ in range(12))
 
-    def get_dict_representation(self):
+    def get_dict_representation(self) -> Dict:
 
         return {"id": self.id, "username": self.username, "first_login": self.first_login, "is_admin": self.is_admin}
 
@@ -127,7 +128,7 @@ class Settings(db.Model):
     smtp_starttls = db.Column(db.Boolean, default=False, nullable=True)
     webhook_url = db.Column(db.Text, nullable=True)
 
-    def get_dict_representation(self):
+    def get_dict_representation(self) -> Dict:
 
         return {
             "smtp_host": self.smtp_host,
@@ -163,7 +164,7 @@ def check_if_token_in_blocklist(jwt_header: Dict, jwt_payload: Dict) -> bool:
         return bool(blocked_jti)
 
 
-def init_app(app):
+def init_app(app: Flask) -> None:
 
     with app.app_context():
         if db.session.query(User).count() != 0:
