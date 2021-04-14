@@ -32,6 +32,11 @@ def test_flask_client_with_empty_db():
     os.remove(os.path.join(BASEDIR, "app_test.db"))
 
 
+def setup_database(db_template_file_name):
+
+    copyfile(os.path.join(BASEDIR, db_template_file_name), os.path.join(BASEDIR, "app_test.db"))
+
+
 @pytest.fixture
 def authorization_headers(test_flask_client):
 
@@ -50,8 +55,3 @@ def create_test_client(test_flask_client, authorization_headers, client_name):
 def create_test_user(test_flask_client, authorization_headers, username):
 
     test_flask_client.post("/api/user", headers=authorization_headers["access_header"], json={"username": username})
-
-
-def setup_database(db_template_file_name):
-
-    copyfile(os.path.join(BASEDIR, db_template_file_name), os.path.join(BASEDIR, "app_test.db"))
