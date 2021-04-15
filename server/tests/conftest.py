@@ -55,3 +55,12 @@ def create_test_client(test_flask_client, authorization_headers, client_name):
 def create_test_user(test_flask_client, authorization_headers, username):
 
     test_flask_client.post("/api/user", headers=authorization_headers["access_header"], json={"username": username})
+
+
+def create_test_settings(test_flask_client, authorization_headers, settings):
+
+    test_flask_client.patch(
+        "/api/settings",
+        headers=authorization_headers["access_header"],
+        json=settings,
+    )

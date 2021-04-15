@@ -39,7 +39,7 @@ def send_mail(recipient: str, xss: XSS = None) -> None:
 
             smtp_server_login(settings, server)
 
-            if settings.starttls:
+            if settings.smtp_starttls:
                 server.starttls()
 
             server.sendmail(settings.smtp_mail_from, recipient, msg.as_string())

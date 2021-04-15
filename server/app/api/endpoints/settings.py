@@ -77,7 +77,7 @@ def test_smtp_settings():
         return generate_message_response("Invalid recipient", 400)
 
     try:
-        send_mail(receiver=request_body["mail_to"])
+        send_mail(recipient=request_body["mail_to"])
         return generate_message_response("SMTP configuration test successful")
     except:
         return generate_message_response("Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it.", 400)
