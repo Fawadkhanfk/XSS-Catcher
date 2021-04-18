@@ -80,7 +80,7 @@ def test_smtp_settings():
         send_mail(recipient=request_body["mail_to"])
         return generate_message_response("SMTP configuration test successful")
     except:
-        return generate_message_response("Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it.", 400)
+        return generate_message_response("Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it.", 500)
 
 
 @bp.route("/settings/test/webhook", methods=["POST"])
@@ -97,7 +97,7 @@ def test_webhook_settings():
         return generate_message_response("Invalid URL", 400)
 
     try:
-        send_webhook(receiver=request_body["url"])
+        send_webhook(recipient=request_body["url"])
         return generate_message_response("Webhook configuration test successful")
     except:
-        return generate_message_response("Could not send test webhook", 400)
+        return generate_message_response("Could not send test webhook", 500)

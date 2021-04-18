@@ -41,9 +41,9 @@ def test__test_smtp_settings__invalid_recipient__400(test_flask_client, authoriz
 
 
 @mock.patch("smtplib.SMTP", side_effect=ValueError)
-def test__test_smtp_settings__invalid_smtp_configuration__400(SMTP_mocker, test_flask_client, authorization_headers):
+def test__test_smtp_settings__invalid_smtp_configuration__500(SMTP_mocker, test_flask_client, authorization_headers):
 
     response = test_flask_client.post(ENDPOINT, headers=authorization_headers["access_header"], json={"mail_to": "dax@hackerman.ca"})
 
-    assert response.status_code == 400
+    assert response.status_code == 500
     assert response.json["message"] == "Could not send test email. Please review your SMTP configuration and don't forget to save it before testing it."
