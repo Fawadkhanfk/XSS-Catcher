@@ -4,7 +4,7 @@ from app import Config
 ENDPOINT = "/api/auth/login"
 
 
-def test__login__valid_data__200(test_flask_client):
+def test__login__valid_data__valid_tokens(test_flask_client):
 
     response = test_flask_client.post(ENDPOINT, json={"username": "admin", "password": "xss"})
 
