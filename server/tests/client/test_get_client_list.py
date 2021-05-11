@@ -3,7 +3,7 @@ from tests.conftest import create_test_client
 ENDPOINT = "/api/client"
 
 
-def test__get_client_list__valid_data__200(test_flask_client, authorization_headers):
+def test__get_client_list__valid_data__two_list_element(test_flask_client, authorization_headers):
 
     create_test_client(test_flask_client, authorization_headers, "test1")
     create_test_client(test_flask_client, authorization_headers, "test2")

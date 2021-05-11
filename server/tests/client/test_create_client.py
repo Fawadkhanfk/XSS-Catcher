@@ -1,14 +1,17 @@
+from app.models import Client
 from tests.conftest import create_test_client
 
 ENDPOINT = "/api/client"
 
 
-def test__create_client__valid_data__201(test_flask_client, authorization_headers):
+def test__create_client__valid_data__new_client(test_flask_client, authorization_headers):
 
     response = test_flask_client.post(ENDPOINT, headers=authorization_headers["access_header"], json={"name": "test", "description": "test"})
 
+    number_of_clients = Client.query.count()
+
     assert response.status_code == 201
-    assert response.json["message"] == "New client test created successfuly"
+    assert number_of_clients == 1
 
 
 def test__create_client__missing_client_name__400(test_flask_client, authorization_headers):
