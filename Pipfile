@@ -20,6 +20,7 @@ pre-commit = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
+pyjwt = "*"
 
 [requires]
 python_version = "3.8"

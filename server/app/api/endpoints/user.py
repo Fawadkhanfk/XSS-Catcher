@@ -4,7 +4,7 @@ from app.api.endpoints import bp
 from app.api.utils.shared import generate_data_response, generate_message_response, permissions
 from app.api.validators.shared import ValidationException
 from app.models import User
-from flask import jsonify, request
+from flask import request
 from flask_jwt_extended import get_current_user, jwt_required
 
 
@@ -49,7 +49,7 @@ def change_current_user_password():
     current_user.first_login = False
 
     db.session.commit()
-    return jsonify({"status": "OK", "detail": "Password changed successfuly"}), 200
+    return generate_message_response("Password changed successfuly")
 
 
 @bp.route("/user/<int:id>/password", methods=["POST"])

@@ -10,9 +10,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASEDIR, "ap
 app.config["TESTING"] = True
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def test_flask_client():
-
     setup_database("app_test.db.template")
 
     with app.test_client() as client:
@@ -21,7 +20,7 @@ def test_flask_client():
     os.remove(os.path.join(BASEDIR, "app_test.db"))
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def test_flask_client_with_empty_db():
 
     setup_database("app_test_empty.db.template")

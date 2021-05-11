@@ -1,6 +1,6 @@
 from tests.conftest import create_test_client, create_test_user
 
-ENDPOINT = "/api/client"
+ENDPOINT = "/api/client/{id}"
 
 
 def test__edit_client__valid_data__200(test_flask_client, authorization_headers):
@@ -9,7 +9,7 @@ def test__edit_client__valid_data__200(test_flask_client, authorization_headers)
     create_test_user(test_flask_client, authorization_headers, "test")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"name": "test", "description": "123", "owner": 2, "mail_to": "test@hackerman.ca", "webhook_url": "https://hackerman.ca"},
     )
@@ -24,7 +24,7 @@ def test__edit_client__existing_client_name__400(test_flask_client, authorizatio
     create_test_client(test_flask_client, authorization_headers, "test2")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"name": "test2"},
     )
@@ -38,7 +38,7 @@ def test__edit_client__non_existing_user__400(test_flask_client, authorization_h
     create_test_client(test_flask_client, authorization_headers, "test")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"owner": "2"},
     )
@@ -52,7 +52,7 @@ def test__edit_client__empty_mail_to_and_webhook_url__200(test_flask_client, aut
     create_test_client(test_flask_client, authorization_headers, "test")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"mail_to": "", "webhook_url": ""},
     )
@@ -66,7 +66,7 @@ def test__edit_client__invalid_webhook_url__400(test_flask_client, authorization
     create_test_client(test_flask_client, authorization_headers, "test")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"webhook_url": "test"},
     )
@@ -80,7 +80,7 @@ def test__edit_client__invalid_mail_to__400(test_flask_client, authorization_hea
     create_test_client(test_flask_client, authorization_headers, "test")
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"mail_to": "test"},
     )
@@ -92,7 +92,7 @@ def test__edit_client__invalid_mail_to__400(test_flask_client, authorization_hea
 def test__edit_client__non_existing_client__404(test_flask_client, authorization_headers):
 
     response = test_flask_client.patch(
-        f"{ENDPOINT}/1",
+        ENDPOINT.format(id=1),
         headers=authorization_headers["access_header"],
         json={"name": "test"},
     )
