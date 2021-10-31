@@ -1,6 +1,4 @@
 SHELL := /usr/bin/env bash
-POSTGRES_USER = user
-POSTGRES_DB = xss
 POSTGRES_PASSWORD := $(shell cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)\n
 CLIENT_DIR=client
 
@@ -8,25 +6,30 @@ install:
 	@python3 -m pip install pipenv -U
 	@pipenv install --dev
 	@pipenv run pre-commit install
+	@npm install --prefix $(CLIENT_DIR)
 
 lint:
+	@pipenv run black --line-length=160 server
+	@pipenv run isort --profile black server
 	@npm run --prefix $(CLIENT_DIR) lint
-	@pipenv run black --line-length=160 server/app server/tests server/config.py server/xss.py
-	@pipenv run isort --profile black server/app server/tests server/config.py server/xss.py
 
 test:
 	@pipenv run pytest server/tests
 
 test-coverage-report:
-	@pipenv run pytest -v --cov=app --cov-report html:cov_html server/tests
+	@pipenv run pytest -v --cov=endpoints --cov-report html:cov_html server/tests
+
+run-web-app:
+	@npm --prefix client run serve
+
+run-backend-server: lint
+	@cd server/api && pipenv run uvicorn main:app --reload
 
 generate-secrets:
-ifeq ($(wildcard ./.env),)
-	@echo POSTGRES_PASSWORD=$(POSTGRES_PASSWORD) >> .env
-	@echo POSTGRES_USER=$(POSTGRES_USER) >> .env
-	@echo POSTGRES_DB=$(POSTGRES_DB) >> .env
+ifeq ($(wildcard ./.db_password),)
+	@echo $(POSTGRES_PASSWORD) > .db_password
 else
-	@echo "[-] Docker environment variables are already set"
+	@echo "[-] Database password are already set"
 endif
 
 deploy: generate-secrets
