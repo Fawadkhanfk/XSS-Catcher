@@ -23,7 +23,7 @@ run-web-app:
 	@npm --prefix client run serve
 
 run-backend-server: lint
-	@cd server/api && pipenv run uvicorn main:app --reload
+	@cd server && pipenv run uvicorn main:app --reload
 
 generate-secrets:
 ifeq ($(wildcard ./.db_password),)
